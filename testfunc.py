@@ -386,7 +386,22 @@ def creat_open_tx(account, ssig, userID, permlink, steemd_instance, wallet_insta
     open_tx = tx_build(openop, steemd_instance, wallet_instance, account)
     return open_tx
 
-def creat_num_open_tx(account, ssig, userID, permlink, steemd_instance, wallet_instance):
+def creat_num_open_tx(num, account, ssiglist, userID, permlinklist, steemd_instance, wallet_instance):
+    opentxlist=[]
+    threads = []
+    for i in range(num):
+        t = MyThread(creat_open_tx,
+                     args=(account, ssiglist[i], userID, permlinklist[i], steemd_instance,
+                           wallet_instance))
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    for t in threads:
+        opentx = t.get_result()
+        opentxlist.append(opentx)
+    return opentxlist
 
 def tx_broad(tx):
     tx.broadcast()
@@ -445,6 +460,18 @@ def main():
     print("uid", UID)
     #获取usk
     pk , usk = get_usk(userID, GID, UID)
+
+    # ssiglist, permlinklist, committxlist = creat_num_commit_tx(120, accountlist[1], usk, pk, GID, UID,
+    #                                                            clientlist[1].steemd, clientlist[1].wallet,
+    #                                                            ttitle="paper_title",
+    #                                                            tbody="paper_body"
+    #                                                            )
+    # opentxlist = creat_num_open_tx(120, accountlist[0], ssiglist, userID, permlinklist, clientlist[0].steemd,
+    #                                clientlist[0].wallet)
+    # for i in range(3):
+    #     mul_tx_broad(committxlist[i*40:(i+1)*40])
+        # mul_tx_broad(opentxlist[i*40:(i+1)*40])
+
     ##################################################################
     # commitop, ssig, permlink = annoy_commit(accountlist[1], usk, pk, GID, UID,title = "paper_title",  body = "paper_body", groupID="computer")
     # tx = tx_build(commitop, clientlist[1].steemd, clientlist[1].wallet, accountlist[1])
@@ -463,23 +490,20 @@ def main():
     #--2
 
     #先创建交易，再统一广播 --3
-    _,_,txlist =creat_num_commit_tx(40, accountlist[1], usk, pk, GID, UID, clientlist[1].steemd, clientlist[1].wallet, ttitle="paper_title",
-                    tbody="paper_body"
-    )
+    # ssiglist, permlinklist, committxlist =creat_num_commit_tx(10, accountlist[1], usk, pk, GID, UID, clientlist[1].steemd, clientlist[1].wallet, ttitle="paper_title",
+    #                 tbody="paper_body"
+    # )
 
-    # mul_tx_broad(txlist)
-
-    _, _, txlist2 = creat_num_commit_tx(40, accountlist[0], usk, pk, GID, UID, clientlist[0].steemd,
-                                       clientlist[0].wallet, ttitle="paper_title",
-                                       tbody="paper_body"
-                                       )
-    print(txlist)
-    txlist.extend(txlist2)
-    mul_tx_broad(txlist)
+    # _, _, txlist2 = creat_num_commit_tx(40, accountlist[0], usk, pk, GID, UID, clientlist[0].steemd,
+    #                                    clientlist[0].wallet, ttitle="paper_title",
+    #                                    tbody="paper_body"
+    #                                    )
+    # print(txlist)
+    # txlist.extend(txlist2)
+    # mul_tx_broad(committxlist)
     # --3
 
-
-    sleep(3)
+    # sleep(3)
     #多线程 单节点
     # one_mul_annoy_tx(accountlist[1], usk, pk, UID, clientlist[1].steemd, clientlist[1].wallet)
     ######################################################################################
@@ -493,6 +517,10 @@ def main():
 
     # 多线程 多节点
     # mul_open_tx(ssiglist, permlinklist, userID)
+
+    #先创建open交易再统一广播 --3
+    # opentxlist = creat_num_open_tx(10, accountlist[0], ssiglist, userID, permlinklist, clientlist[0].steemd, clientlist[0].wallet)
+    # mul_tx_broad(opentxlist)
     ###########################################################################################3
     return
 
